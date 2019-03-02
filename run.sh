@@ -6,8 +6,8 @@
 # docker run $1 ${@:2}
 
 
-CONTAINER_NAME="odrive"
-IMAGE="allenyllee/odrive"
+CONTAINER_NAME="odrive2"
+IMAGE="odrive"
 
 
 XSOCK=/tmp/.X11-unix

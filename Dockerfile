@@ -2,7 +2,13 @@
 #
 # VERSION               0.0.1
 
-FROM      ubuntu:16.04
+# to avoid errors:
+# libGL error: No matching fbConfigs or visuals found
+# libGL error: failed to load driver: swrast
+# Error: couldn't get an RGB, Double-buffered visual
+#
+# use nvidia/cudagl image
+FROM      nvidia/cudagl:9.0-devel-ubuntu16.04
 LABEL     maintainer="allen7575@gmail.com"
 
 ##
@@ -15,7 +21,15 @@ LABEL     maintainer="allen7575@gmail.com"
 ############
 # E: Unable to fetch some archives, maybe run apt-get update or try with --fix-missing? - Ask Ubuntu
 # https://askubuntu.com/questions/364404/e-unable-to-fetch-some-archives-maybe-run-apt-get-update-or-try-with-fix-mis
-RUN apt update && apt upgrade -y && apt-get clean
+# 
+# What to do when your ubuntu distro is End-of-Life
+# https://gist.github.com/dergachev/f5da514802fcbbb441a1
+# 
+# if you were encountering "Unable to fetch some archives" error, 
+# just replace origin source URLs `archive.ubuntu.com` with `tw.archive.ubuntu.com`, it should work fine.
+RUN sed -i.bak -r 's/(archive).ubuntu.com/tw.archive.ubuntu.com/g' /etc/apt/sources.list
+RUN apt update && apt upgrade -y
+
 
 ##############################
 #########################
@@ -32,9 +46,11 @@ RUN apt update && apt upgrade -y && apt-get clean
 ##########
 RUN apt install -y vim
 
+
 # Ubuntu Missing dependencies? · Issue #92 · electron-userland/electron-prebuilt
 # https://github.com/electron-userland/electron-prebuilt/issues/92
 RUN apt install -y fuse libgtk2.0-0 libnss3 libgtk-3-0 libasound2
+
 
 # Failed to load module “canberra-gtk-module” .... but already installed - Ask Ubuntu
 # https://askubuntu.com/questions/342202/failed-to-load-module-canberra-gtk-module-but-already-installed
@@ -61,6 +77,61 @@ RUN apt install -y dbus-x11
 # http://cgit.freedesktop.org/xdg/desktop-file-utils/
 RUN apt install -y xdg-utils
 RUN apt install -y desktop-file-utils
+
+
+##############################
+#########################
+## X11 GUI
+#########################
+##############################
+
+#############
+# install xeyes, xclock
+#############
+RUN apt install -y x11-apps
+
+###################
+# install VirtualGL
+###################
+# nvidia-virtualgl/Dockerfile at master · plumbee/nvidia-virtualgl
+# https://github.com/plumbee/nvidia-virtualgl/blob/master/Dockerfile
+
+#
+# install glxgears
+# How to Check 3D Acceleration (FPS) in Ubuntu/Linux Mint
+# http://www.upubuntu.com/2013/11/how-to-check-3d-acceleration-fps-in.html
+#
+# use following command to check
+# export LIBGL_DEBUG=verbose && glxgears
+#
+# How can i deal with 'libGL error: failed to load driver: swrast.' · Issue #509 · openai/gym
+# https://github.com/openai/gym/issues/509
+#
+# Based on the dockerfile of nvidia/cuda, I can solve this problem.
+# https://gitlab.com/nvidia/cuda/blob/ubuntu16.04/8.0/runtime/Dockerfile
+#
+# Or you can just use it with nvidia-docker to create another container run all the stuff without touching your OS environments.
+#
+# install mesa-utils for testing glxgear
+RUN apt install -y mesa-utils
+
+# install curl for download VirtualGL
+RUN apt install -y curl
+
+# download & install VirtualGL
+ENV VIRTUALGL_VERSION 2.5.2
+RUN curl -sSL https://downloads.sourceforge.net/project/virtualgl/"${VIRTUALGL_VERSION}"/virtualgl_"${VIRTUALGL_VERSION}"_amd64.deb -o virtualgl_"${VIRTUALGL_VERSION}"_amd64.deb && \
+    dpkg -i virtualgl_*_amd64.deb && \
+    rm virtualgl_*_amd64.deb
+
+# install libxv1 to avoid
+# glxgears: error while loading shared libraries: libXv.so.1: cannot open shared object file: No such file or directory
+# when executed vglrun glxgears
+RUN apt install -y libxv1
+
+# Granting Access to the 3D X Server
+# https://cdn.rawgit.com/VirtualGL/virtualgl/2.5.2/doc/index.html#hd006001
+#RUN /opt/VirtualGL/bin/vglserver_config -config +s +f -t
 
 
 ##############################

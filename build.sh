@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker build -t allenyllee/odrive . -f Dockerfile
+docker build -t odrive . -f Dockerfile
