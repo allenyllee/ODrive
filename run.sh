@@ -6,8 +6,8 @@
 # docker run $1 ${@:2}
 
 
-CONTAINER_NAME="odrive2"
-IMAGE="odrive"
+CONTAINER_NAME="odrive-dev"
+IMAGE="odrive-dev"
 
 
 XSOCK=/tmp/.X11-unix
@@ -41,20 +41,26 @@ nvidia-docker rm $CONTAINER_NAME
 # pull latest image
 nvidia-docker pull $IMAGE
 
+# d bus - Connect with D-Bus in a network namespace - Unix & Linux Stack Exchange
+# https://unix.stackexchange.com/questions/184964/connect-with-d-bus-in-a-network-namespace/396821#396821
+#
+# to show icon menu on the host tray, you should connected to the host dbus
+xdg-dbus-proxy $DBUS_SESSION_BUS_ADDRESS /tmp/proxybus &
+
 # run new container
 nvidia-docker run -ti --rm \
-    --user guest \
+    --user root \
     --name $CONTAINER_NAME \
     --env DISPLAY=$DISPLAY \
     --env XAUTHORITY=$XAUTH \
-    --volume $XSOCK:$XSOCK \
-    --volume $XAUTH_DIR:$XAUTH_DIR \
-    --volume /home/allenyllee/Projects_SSD/docker-srv/ODriveConfig/odrive:/home/guest/.config/odrive \
+    --env DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/proxybus \
+    --volume /tmp:/tmp `# tray icon will placed in /tmp/.org.chromium.Chromium.xxxx/` \
+    `# --volume /home/allenyllee/Projects_SSD/docker-srv/ODriveConfig/odrive:/home/guest/.config/odrive ` \
     --volume /home/allenyllee/Projects/Google\ 雲端硬碟:/ODrive \
     --cap-add SYS_ADMIN \
     --device /dev/fuse \
     --security-opt apparmor:unconfined \
     `#--device /dev/video0:/dev/video0 # for webcam` \
-    --entrypoint /bin/bash \
+    --entrypoint /scripts/init.sh \
     $IMAGE \
     -c "bash"

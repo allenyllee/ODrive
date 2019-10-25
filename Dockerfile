@@ -21,11 +21,11 @@ LABEL     maintainer="allen7575@gmail.com"
 ############
 # E: Unable to fetch some archives, maybe run apt-get update or try with --fix-missing? - Ask Ubuntu
 # https://askubuntu.com/questions/364404/e-unable-to-fetch-some-archives-maybe-run-apt-get-update-or-try-with-fix-mis
-# 
+#
 # What to do when your ubuntu distro is End-of-Life
 # https://gist.github.com/dergachev/f5da514802fcbbb441a1
-# 
-# if you were encountering "Unable to fetch some archives" error, 
+#
+# if you were encountering "Unable to fetch some archives" error,
 # just replace origin source URLs `archive.ubuntu.com` with `tw.archive.ubuntu.com`, it should work fine.
 RUN sed -i.bak -r 's/(archive).ubuntu.com/tw.archive.ubuntu.com/g' /etc/apt/sources.list
 RUN apt update && apt upgrade -y
@@ -54,7 +54,7 @@ RUN apt install -y fuse libgtk2.0-0 libnss3 libgtk-3-0 libasound2
 
 # Failed to load module “canberra-gtk-module” .... but already installed - Ask Ubuntu
 # https://askubuntu.com/questions/342202/failed-to-load-module-canberra-gtk-module-but-already-installed
-# 
+#
 # missing libgobject-2.0.so.0 error on Kubuntu 16.10 - Ask Ubuntu
 # https://askubuntu.com/questions/892578/missing-libgobject-2-0-so-0-error-on-kubuntu-16-10
 RUN apt install -y libcanberra-gtk-module libcanberra-gtk3-module
@@ -231,14 +231,14 @@ RUN echo root:root | chpasswd
 #       Create the user's home directory if it does not exist.
 #
 RUN useradd -m guest -s /bin/bash && \
-    echo guest:guest | chpasswd 
+    echo guest:guest | chpasswd
 
 # grant access for guest to video device
 RUN usermod -a -G video guest `# grant access to video device`
 
-USER guest 
-ENV HOME /home/guest 
-ENV USER guest 
+USER guest
+ENV HOME /home/guest
+ENV USER guest
 
 # change user
 USER root
@@ -292,6 +292,30 @@ RUN chmod +x /scripts/*
 RUN chown -R guest:guest /scripts/*
 
 
+# 14.04 - error while loading shared libraries: libXss.so.1 - Ask Ubuntu
+# https://askubuntu.com/questions/547151/error-while-loading-shared-libraries-libxss-so-1
+RUN apt-get install -y libxss1
+
+RUN apt-get install -y git && \
+    apt-get install -y curl && \
+    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
+    apt-get install -y nodejs
+
+RUN mkdir /test && \
+    chown guest:guest -R /test
+
+USER guest
+
+RUN cd /test && \
+    git clone https://github.com/liberodark/ODrive && \
+    cd ./ODrive && \
+    git checkout 0.2.2 && \
+    npm install && \
+    git checkout 0.3.0 && \
+    npm install
+
+# RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ubuntu-desktop
+
 ENTRYPOINT ["/scripts/init.sh"]
 
-CMD ["bash"]
+CMD ["/scripts/run_odrive.sh"]
