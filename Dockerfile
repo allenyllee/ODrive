@@ -8,8 +8,43 @@
 # Error: couldn't get an RGB, Double-buffered visual
 #
 # use nvidia/cudagl image
-FROM      nvidia/cudagl:9.0-devel-ubuntu16.04
+FROM      nvidia/cudagl:9.0-devel-ubuntu16.04 AS base
 LABEL     maintainer="allen7575@gmail.com"
+
+FROM base AS builder
+
+# 14.04 - error while loading shared libraries: libXss.so.1 - Ask Ubuntu
+# https://askubuntu.com/questions/547151/error-while-loading-shared-libraries-libxss-so-1
+# RUN apt-get install -y libxss1
+
+RUN sed -i.bak -r 's/(archive).ubuntu.com/tw.archive.ubuntu.com/g' /etc/apt/sources.list && \
+    apt update && \
+    apt-get install -y curl && \
+    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get install -y git
+
+
+# use none root to build binary to avoid strange errors
+# like "can't see css style"
+RUN useradd -m guest -s /bin/bash && \
+    echo guest:guest | chpasswd
+
+USER guest
+ENV HOME /home/guest
+ENV USER guest
+
+RUN cd $HOME && \
+    git clone https://github.com/liberodark/ODrive && \
+    cd ./ODrive && \
+    git checkout 0.2.1 && \
+    npm install && \
+    npm run release-linux && \
+    git checkout 0.3.0 && \
+    npm install && \
+    npm run release-linux
+
+FROM base
 
 ##
 ## Ubuntu - Packages - Search
@@ -255,7 +290,6 @@ USER root
 # RUN apt upgrade -y
 
 
-
 ##############
 # cleanup
 ##############
@@ -283,6 +317,8 @@ USER root
 # https://stackoverflow.com/questions/30215830/dockerfile-copy-keep-subdirectory-structure
 COPY ./scripts/ /scripts/
 
+COPY --from=builder /home/guest/ODrive/dist/OpenDrive*.AppImage /scripts/
+
 # starting container process caused "exec: \"./extra/service_startup.sh\": permission denied" · Issue #431 · facebook/fbctf
 # https://github.com/facebook/fbctf/issues/431
 RUN chmod +x /scripts/*
@@ -292,29 +328,6 @@ RUN chmod +x /scripts/*
 RUN chown -R guest:guest /scripts/*
 
 
-# 14.04 - error while loading shared libraries: libXss.so.1 - Ask Ubuntu
-# https://askubuntu.com/questions/547151/error-while-loading-shared-libraries-libxss-so-1
-RUN apt-get install -y libxss1
-
-RUN apt-get install -y git && \
-    apt-get install -y curl && \
-    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-    apt-get install -y nodejs
-
-RUN mkdir /test && \
-    chown guest:guest -R /test
-
-USER guest
-
-RUN cd /test && \
-    git clone https://github.com/liberodark/ODrive && \
-    cd ./ODrive && \
-    git checkout 0.2.2 && \
-    npm install && \
-    git checkout 0.3.0 && \
-    npm install
-
-# RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ubuntu-desktop
 
 ENTRYPOINT ["/scripts/init.sh"]
 

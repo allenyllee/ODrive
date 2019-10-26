@@ -6,10 +6,9 @@ echo "input parameter: $@"
 SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo "SOURCE_DIR:" $SOURCE_DIR
 
-chown guest:guest -R /home/guest/.config /home/guest/.cache
+chown guest:guest -R /home/guest/.config /home/guest/.cache /scripts
 
-su guest
-
+su guest -c "exec $@"
 
 # run init script here
 # $SOURCE_DIR/run_odrive.sh

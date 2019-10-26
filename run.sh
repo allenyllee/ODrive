@@ -5,6 +5,14 @@
 
 # docker run $1 ${@:2}
 
+COMMAND="$1"
+
+if [ "$COMMAND" == "" ]
+then
+    COMMAND="bash"
+fi
+
+echo $COMMAND
 
 CONTAINER_NAME="odrive-dev"
 IMAGE="odrive-dev"
@@ -64,4 +72,4 @@ nvidia-docker run -ti --rm \
     `#--device /dev/video0:/dev/video0 # for webcam` \
     --entrypoint /scripts/init.sh \
     $IMAGE \
-    -c "bash"
+    "$COMMAND"
