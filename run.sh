@@ -13,6 +13,7 @@ IMAGE="odrive-dev"
 XSOCK=/tmp/.X11-unix
 XAUTH_DIR=/tmp/.docker.xauth
 XAUTH=$XAUTH_DIR/.xauth
+DBUS_PROXY=unix:path=/tmp/.dbus/.proxybus
 
 # # 1. Use tr to swap the newline character to NUL character.
 # #       NUL (\000 or \x00) is nice because it doesn't need UTF-8 support and it's not likely to be used.
@@ -45,7 +46,7 @@ nvidia-docker pull $IMAGE
 # https://unix.stackexchange.com/questions/184964/connect-with-d-bus-in-a-network-namespace/396821#396821
 #
 # to show icon menu on the host tray, you should connected to the host dbus
-xdg-dbus-proxy $DBUS_SESSION_BUS_ADDRESS /tmp/proxybus &
+# xdg-dbus-proxy $DBUS_SESSION_BUS_ADDRESS /tmp/proxybus &
 
 # run new container
 nvidia-docker run -ti --rm \
@@ -53,7 +54,7 @@ nvidia-docker run -ti --rm \
     --name $CONTAINER_NAME \
     --env DISPLAY=$DISPLAY \
     --env XAUTHORITY=$XAUTH \
-    --env DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/proxybus \
+    --env DBUS_SESSION_BUS_ADDRESS=$DBUS_PROXY \
     --volume /tmp:/tmp `# tray icon will placed in /tmp/.org.chromium.Chromium.xxxx/` \
     `# --volume /home/allenyllee/Projects_SSD/docker-srv/ODriveConfig/odrive:/home/guest/.config/odrive ` \
     --volume /home/allenyllee/Projects/Google\ 雲端硬碟:/ODrive \
